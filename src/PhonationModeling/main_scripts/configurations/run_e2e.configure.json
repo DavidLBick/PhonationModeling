@@ -8,7 +8,7 @@
     "results_save_dir": "/share/workhorse1/dbick/voice_covid/ehhh/",
     "results_save_filename": "",
     "optim_patience": 5,
-    "plot_results": false, 
+    "plot_results": false,  
     "step_size": [
         0.05,
         0.1,

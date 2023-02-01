@@ -48,9 +48,7 @@ if not log_file:
     time_str = time_str.split(".")[0]
     log_file = os.path.join(log_dir, log_file + f"_{time_str}.log")
     configs["log"]["handlers"]["file"]["filename"] = log_file
-
 PLOT = configs['plot_results'] 
-
 if os.path.isfile(log_file):
     print(f"file {log_file} already exists")
     raise FileExistsError

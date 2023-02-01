@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import time 
 import json
 import logging
 import logging.config
@@ -27,7 +28,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-cf", "--configure_file", required=True, help="configure file for experiment")
 args = parser.parse_args()
 
-# Load configures
 configure_file = args.configure_file
 try:
     with open(configure_file) as f:
@@ -42,6 +42,15 @@ try:
 except FileExistsError:
     print(f"folder {log_dir} already exists")
 log_file = configs["log"]["handlers"]["file"]["filename"]
+if not log_file:
+    log_file = "output"
+    time_str = f"{time.time()}" 
+    time_str = time_str.split(".")[0]
+    log_file = os.path.join(log_dir, log_file + f"_{time_str}.log")
+    configs["log"]["handlers"]["file"]["filename"] = log_file
+
+PLOT = configs['plot_results'] 
+
 if os.path.isfile(log_file):
     print(f"file {log_file} already exists")
     raise FileExistsError
@@ -83,7 +92,6 @@ for step_size in step_sizes:
     c = 5000  # air particle velocity, cm/s
     eta = 1.0  # nonlinear factor for energy dissipation at large amplitude
 
-    results_collection = dict()  # store model results for each file
     for wf in wav_lst:
         # Read wav
         logger.info(f"Reading {wf}")
@@ -91,7 +99,7 @@ for step_size in step_sizes:
         if wav_samples.dtype.name == "int16":
             # Convert from 16-bit int to 32-bit float
             wav_samples = (wav_samples / pow(2, 15)).astype("float32")
-
+        wav_samples = wav_samples + np.random.normal(0, 1e-3, wav_samples.shape)
         # Extract glottal flow
         logger.info("Extracting glottal flow")
         glottal_flow, _, _, _ = iaif_ola(
@@ -108,11 +116,12 @@ for step_size in step_sizes:
         wav_samples = wav_samples / np.linalg.norm(wav_samples)
         glottal_flow = glottal_flow / np.linalg.norm(glottal_flow)
 
-        fig = plt.figure()
-        plt.plot(np.linspace(0, len(wav_samples) / sample_rate, len(wav_samples)), wav_samples)
-        plt.plot(np.linspace(0, len(glottal_flow) / sample_rate, len(glottal_flow)), glottal_flow)
-        plt.legend(["speech sample", "glottal flow"])
-        plt.show()
+        if PLOT:
+            fig = plt.figure()
+            plt.plot(np.linspace(0, len(wav_samples) / sample_rate, len(wav_samples)), wav_samples)
+            plt.plot(np.linspace(0, len(glottal_flow) / sample_rate, len(glottal_flow)), glottal_flow)
+            plt.legend(["speech sample", "glottal flow"])
+            plt.show()
 
         # Set model initial conditions
         delta = np.random.random()  # asymmetry parameter
@@ -192,14 +201,15 @@ for step_size in step_sizes:
             # Estimation residual
             R = u0 - glottal_flow
 
-            # Plot glottal flow
-            plt.figure()
-            plt.plot(sol[:, 0], glottal_flow, "k.-")
-            plt.plot(sol[:, 0], u0, "b.-")
-            plt.plot(sol[:, 0], R, "r.-")
-            plt.xlabel("t")
-            plt.legend(["glottal flow", "estimated glottal flow", "residual"])
-            plt.show()
+            if PLOT:
+                # Plot glottal flow
+                plt.figure()
+                plt.plot(sol[:, 0], glottal_flow, "k.-")
+                plt.plot(sol[:, 0], u0, "b.-")
+                plt.plot(sol[:, 0], R, "r.-")
+                plt.xlabel("t")
+                plt.legend(["glottal flow", "estimated glottal flow", "residual"])
+                plt.show()
 
             # Solve adjoint model
             logger.info("Solving adjoint model")
@@ -354,7 +364,6 @@ for step_size in step_sizes:
         best_results["delta"].append(delta_best)
         best_results["sol"].append(sol_best)
         best_results["u0"].append(u0_best)
-        results_collection[wf] = best_results
         logger.info(
             f"BEST@{iteration_best:d}: L2 Residual = {Rk_best:.4f} | alpha = {alpha_best:.4f}   "
             f"beta = {beta_best:.4f}   delta = {delta_best:.4f}"
@@ -362,41 +371,38 @@ for step_size in step_sizes:
         logger.info("*" * 110)
         logger.info("*" * 110)
 
-        plt.figure()
-        plt.plot(sol_best[:, 0], glottal_flow, "k.-")
-        plt.plot(sol_best[:, 0], u0_best, "b.-")
-        plt.plot(sol_best[:, 0], R_best, "r.-")
-        plt.xlabel("t")
-        plt.legend(["glottal flow", "estimated glottal flow", "residual"])
-        plt.figure()
-        plt.subplot(121)
-        plt.plot(sol_best[:, 1], sol_best[:, 3], "b.-")
-        plt.xlabel(r"$\xi_r$")
-        plt.ylabel(r"$\xi_l$")
-        plt.subplot(122)
-        plt.plot(sol_best[:, 2], sol_best[:, 4], "b.-")
-        plt.xlabel(r"$\dot{\xi}_r$")
-        plt.ylabel(r"$\dot{\xi}_l$")
-        plt.tight_layout()
-        plt.show()
+        if PLOT:
+            plt.figure()
+            plt.plot(sol_best[:, 0], glottal_flow, "k.-")
+            plt.plot(sol_best[:, 0], u0_best, "b.-")
+            plt.plot(sol_best[:, 0], R_best, "r.-")
+            plt.xlabel("t")
+            plt.legend(["glottal flow", "estimated glottal flow", "residual"])
+            plt.figure()
+            plt.subplot(121)
+            plt.plot(sol_best[:, 1], sol_best[:, 3], "b.-")
+            plt.xlabel(r"$\xi_r$")
+            plt.ylabel(r"$\xi_l$")
+            plt.subplot(122)
+            plt.plot(sol_best[:, 2], sol_best[:, 4], "b.-")
+            plt.xlabel(r"$\dot{\xi}_r$")
+            plt.ylabel(r"$\dot{\xi}_l$")
+            plt.tight_layout()
+            plt.show()
 
-    # Save results
-    logger.info("Saving results")
-    results_save_dir = os.path.join(configs["project_root"], configs["results_save_dir"])
-    try:
-        os.makedirs(results_save_dir)
-    except FileExistsError:
-        logger.warning(f"folder {results_save_dir} already exists")
-    save_file = os.path.join(
-        results_save_dir, configs["results_save_filename"] + f"_{step_size}.pkl"
-    )
-    if os.path.isfile(save_file):
-        logger.warning(f"file {save_file} already exists")
-        save_file = save_file + f".{datetime.datetime.now().date()}"
-    try:
+        # Save results
+        logger.info("Saving results")
+        results_save_dir = os.path.join(configs["project_root"], configs["results_save_dir"])
+        try:
+            os.makedirs(results_save_dir)
+        except FileExistsError:
+            logger.warning(f"folder {results_save_dir} already exists")
+        
+        wf_fname = wf.split(".")[0]
+        save_file = os.path.join(
+            results_save_dir, wf_fname + f"_{step_size}.pkl"
+        )
         with open(save_file, "wb") as f:
-            pickle.dump(results_collection, f)
+            pickle.dump(best_results, f)
+        del best_results
         logger.info(f"Saved to {save_file}")
-    except OSError as e:
-        logger.error(f"OS error: {e}")
-        logger.error(f"Failed to save to {save_file}")

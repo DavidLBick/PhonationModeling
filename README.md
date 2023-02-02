@@ -2,6 +2,15 @@
 
 This repo contains source codes for phonation modeling and estimating vocal fold and vocal tract models from speech.
 
+# Usage
+
+## set up python virtual environment, install dependencies
+1. Create conda environment 
+2. `conda install --file /path/to/requirements.txt`
+3. Make sure to `cd` into the same directory as `setup.py`, and then `python setup.py install`
+4. Edit `PhonationModeling/main_scripts/configurations/run_e2e.configure.json` on lines 5, 6, 7, 8, and 25 to put your own values in for `wav_dir`, `list_dir`, `wav_list`, `results_save_dir`, `log_dir`, and `filename`. The meaning for each of these respectively is the location of the audios, the directory of a .txt file that lists the audios that you want to process, the .txt filename that lists the audios, the directory to save your outputs, and the directory to save log files.
+5. Run `python -m PhonationModeling.main_scripts.run_e2e --configure_file /path/to/run_e2e.configure.json`
+
 # Package structure
 ```
 .
@@ -85,22 +94,12 @@ This repo contains source codes for phonation modeling and estimating vocal fold
 
 `optimization.py`: optimizers.
 
-# Usage
-
-## set up python virtual environment, install dependencies
-Use `conda`, `requirements.txt`, and `setup.py`.
-
-## run main scripts
-
-```
-# run one of the main scripts: run_e2e, vocal_fold_estimate, vocal_tract_estimate
-python <main script> --configure_file <path to configuration file>
-```
-
 # Contact
 Author: Wenbo Zhao
-
 Email: waynero1954@gmail.com
+
+Edits by David Bick
+Email: davidlbick@gmail.com
 
 # References & useful links
 

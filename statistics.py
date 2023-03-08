@@ -63,7 +63,6 @@ def shoelace_formula(x, y):
 
 def get_stats(vfo, tme_srs_r_idx, tme_srs_l_idx):
     step_size_i = 0
-    area = [shoelace_formula(vfo[f][step_size_i][:, tme_srs_r_idx], vfo[f][step_size_i][:, tme_srs_l_idx]) for f in vfo]
     # amplitude is defined as 1/2(max - min)
     # get the amplitude of displacement for the right vocal fold
     files = [f for f in vfo]
@@ -81,6 +80,7 @@ def get_stats(vfo, tme_srs_r_idx, tme_srs_l_idx):
     # get the correlation coefficient between the right and left vocal folds
     #corr_displ = [np.corrcoef(vfo[f][step_size_i][:, tme_srs_r_idx], vfo[f][step_size_i][:, tme_srs_l_idx])[0, 1] for f in vfo]
     # get the area of the enclosed region formed by the displacement data points with the Shoelace formula
+    area = [shoelace_formula(vfo[f][step_size_i][:, tme_srs_r_idx], vfo[f][step_size_i][:, tme_srs_l_idx]) for f in vfo]
     # get the slope of the regression line fitted to the displacement data points
     regressions = [
         np.polyfit(
@@ -131,7 +131,7 @@ def get_stats(vfo, tme_srs_r_idx, tme_srs_l_idx):
         "range_l": range_displ_l,
         "std_r": std_displ_r,
         "std_l": std_displ_l,
-        #"area_displ": area_displ,
+        "area": area,
         "slope": slope_displ,
         "intercept": intercept_displ,
         "r2": r2_displ,

@@ -97,7 +97,7 @@ for step_size in step_sizes:
         if wav_samples.dtype.name == "int16":
             # Convert from 16-bit int to 32-bit float
             wav_samples = (wav_samples / pow(2, 15)).astype("float32")
-        wav_samples = wav_samples + np.random.normal(0, 1e-3, wav_samples.shape)
+        wav_samples = wav_samples + np.random.normal(0, 1e-7, wav_samples.shape)
         # Extract glottal flow
         logger.info("Extracting glottal flow")
         glottal_flow, _, _, _ = iaif_ola(

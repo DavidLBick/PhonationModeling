@@ -10,6 +10,8 @@ from pyinform import mutual_info, transfer_entropy
 import pyinform.utils as utils
 from sklearn.model_selection import train_test_split
 from shapely.geometry import Polygon
+from scipy.stats import multinomial
+
 
 label_df = pd.read_excel(f"/share/workhorse1/dbick/voice_covid/chile_data/DatafromChile-2023-01-26/COVID19_Sample_Selection_VFO_Research_202301.xlsx")
 # get unique values of "class-syptomaticity" column
@@ -186,23 +188,26 @@ def bin_data(vfo, step_size_i, tme_srs_r_idx, tme_srs_l_idx, smoothing=True):
         # get min of train data
         min_train = np.min(train_data)
         # create threshold array starting from min stepping by bin_size
-        thresholds = np.arange(min_train + bin_size, min_train + bin_size * (num_bins), bin_size)
+        thresholds = np.arange(min_train + bin_size, min_train + bin_size * (num_bins) - 1e-10, bin_size)
         # re-bin the train data using the thresholds
         # rebin_train, _, _ = utils.bin_series(train_data, bounds=thresholds) this worked to match binned_train
         binned_test, _, _ = utils.bin_series(test_data, bounds=thresholds)
 
         # loop over alpha values and calculate the log likelihood of the test data
-        alpha_vals = np.linspace(0.1, 1, 20)
+        _, train_counts = np.unique(binned_train, return_counts=True)
+        _, test_counts = np.unique(binned_test, return_counts=True)
+        alpha_vals = np.linspace(0., 0.001, 21)
         log_likelihoods = []
         for alpha in tqdm(alpha_vals):
-            dist = get_dist_smoothed(binned_test, alpha)
-            log_likelihood = np.sum(np.log(dist))
+            dist = get_dist_smoothed(binned_train, alpha)
+            rv = multinomial(len(test_data), dist)
+            log_likelihood = rv.logpmf(test_counts)
             log_likelihoods.append(log_likelihood)
         # get the alpha value that maximizes the log likelihood
         max_log_likelihood = np.max(log_likelihoods)
         max_log_likelihood_idx = np.argmax(log_likelihoods)
         alpha = alpha_vals[max_log_likelihood_idx]
-        print("alpha: ", alpha)
+        print("best alpha: ", alpha)
         return None, None
     else:
         binned_all, _, bin_size = utils.bin_series(concat_all, b=num_bins)
@@ -265,7 +270,7 @@ def t_test_outputs(pos_stats, neg_stats, pos_def, series_type, dow_cough, step_s
             breakpoint()
 
 USE_FULL = True
-MEASURES = 'stats'  # {'stats', 'info-theory'}
+MEASURES = 'info-theory'  # {'stats', 'info-theory'}
 WRITE_TO_FILE = True
 
 if USE_FULL:

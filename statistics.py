@@ -126,22 +126,7 @@ def get_stats(vfo, tme_srs_r_idx, tme_srs_l_idx):
         }
     return out_dict
 
-def get_dist(arr):
-    # to get likelihood of each bin, need to count the number of times each bin occurs
-    unique, counts = np.unique(arr, return_counts=True)
-    # get sum of counts
-    sum_counts = np.sum(counts)
-    # divide each count by the sum of counts to get the likelihood of each bin
-    dist = counts / sum_counts
-    return dist 
-
-def get_dist_smoothed(arr, alpha):
-    dist = get_dist(arr)
-    # smooth the distribution by taking the average of the distribution and the uniform distribution
-    smoothed_dist = (1 - alpha) * dist + alpha * np.ones(len(dist)) / len(dist)
-    return smoothed_dist
-
-def bin_data(vfo, step_size_i, tme_srs_r_idx, tme_srs_l_idx, smoothing=True):
+def bin_data(vfo, step_size_i, tme_srs_r_idx, tme_srs_l_idx):
     num_bins = 1000
     all_x = [vfo[f][step_size_i][:, tme_srs_r_idx].flatten() for f in vfo]
     x_lens = [len(x) for x in all_x]
@@ -151,49 +136,14 @@ def bin_data(vfo, step_size_i, tme_srs_r_idx, tme_srs_l_idx, smoothing=True):
     concat_y = np.concatenate(all_y)
     # bin the data
     concat_all = np.concatenate((concat_x, concat_y))
-    if smoothing:
-        # split concat_x and concat_y into 60% training and 40% testing
-        x_train, x_test, y_train, y_test = train_test_split(
-            concat_x,
-            concat_y,
-            test_size=0.4,
-            random_state=42
-        )
-        # concat x_train and y_train to get the training data
-        train_data = np.concatenate((x_train, y_train))
-        test_data = np.concatenate((x_test, y_test))
-        # bin the training data
-        binned_train, _, bin_size = utils.bin_series(train_data, b=num_bins)
-        # use the binning from the training data to bin the test data 
-        # get min of train data
-        min_train = np.min(train_data)
-        # create threshold array starting from min stepping by bin_size
-        thresholds = np.arange(min_train + bin_size, min_train + bin_size * (num_bins), bin_size)
-        # re-bin the train data using the thresholds
-        # rebin_train, _, _ = utils.bin_series(train_data, bounds=thresholds) this worked to match binned_train
-        binned_test, _, _ = utils.bin_series(test_data, bounds=thresholds)
 
-        # loop over alpha values and calculate the log likelihood of the test data
-        alpha_vals = np.linspace(0.1, 1, 20)
-        log_likelihoods = []
-        for alpha in tqdm(alpha_vals):
-            dist = get_dist_smoothed(binned_test, alpha)
-            log_likelihood = np.sum(np.log(dist))
-            log_likelihoods.append(log_likelihood)
-        # get the alpha value that maximizes the log likelihood
-        max_log_likelihood = np.max(log_likelihoods)
-        max_log_likelihood_idx = np.argmax(log_likelihoods)
-        alpha = alpha_vals[max_log_likelihood_idx]
-        print("alpha: ", alpha)
-        return None, None
-    else:
-        binned_all, _, bin_size = utils.bin_series(concat_all, b=num_bins)
-        binned_x = binned_all[:len(concat_x)]
-        # recreate each waveform by splitting binned_x into the original lengths of each vfo
-        binned_x = np.split(binned_x, np.cumsum(x_lens)[:-1])
-        binned_y = binned_all[len(concat_y):]
-        binned_y = np.split(binned_y, np.cumsum(y_lens)[:-1])
-        return binned_x, binned_y
+    binned_all, _, bin_size = utils.bin_series(concat_all, b=num_bins)
+    binned_x = binned_all[:len(concat_x)]
+    # recreate each waveform by splitting binned_x into the original lengths of each vfo
+    binned_x = np.split(binned_x, np.cumsum(x_lens)[:-1])
+    binned_y = binned_all[len(concat_y):]
+    binned_y = np.split(binned_y, np.cumsum(y_lens)[:-1])
+    return binned_x, binned_y
 
 def get_info_theory_stats(vfo, tme_srs_r_idx, tme_srs_l_idx):
     step_size_i = 0

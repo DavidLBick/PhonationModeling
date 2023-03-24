@@ -197,7 +197,7 @@ def bin_data(vfo, step_size_i, tme_srs_r_idx, tme_srs_l_idx, smoothing=True):
 
 def get_info_theory_stats(vfo, tme_srs_r_idx, tme_srs_l_idx):
     step_size_i = 0
-    binned_x, binned_y = bin_data(vfo, tme_srs_r_idx, tme_srs_l_idx)
+    binned_x, binned_y = bin_data(vfo, step_size_i, tme_srs_r_idx, tme_srs_l_idx)
     # calculate the entropy of the left and right vocal fold displacement data
     entropy_r = [stats.entropy(
             binned_x[i],

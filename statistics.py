@@ -234,13 +234,13 @@ def get_info_theory_stats(vfo, tme_srs_r_idx, tme_srs_l_idx):
         }
     return out_dict
 
-def t_test_outputs(pos_stats, neg_stats, pos_def, series_type, step_size, sample_size, measure):
+def t_test_outputs(pos_stats, neg_stats, pos_def, series_type, step_size, sample_size, measure, results_fname):
     for key in pos_stats:
         try:
             test_result = stats.ttest_ind(pos_stats[key], neg_stats[key], equal_var=True)
             if test_result.pvalue < 0.05:
                 p_value = round(test_result.pvalue, 3)
-                with open(f"results/cough_results_{sample_size}_{pos_def}_{measure}.txt", "a") as f:
+                with open(results_fname, "a") as f:
                     f.write(f"{step_size}, {series_type}, {key}, {p_value}\n")
         except:
             print(f"Error in computing the test on the following key: {key}")
@@ -265,7 +265,8 @@ pos_definitions = configs['pos_definitions']
 for pos_def in pos_definitions:
     print(f"Positive-definition: {pos_def}")
     if WRITE_TO_FILE:
-        with open(f"results_{sample_size}_{pos_def}_{MEASURES}.txt", "a") as f:
+        results_fname = f"results/results_{sample_size}_{pos_def}_{MEASURES}.txt"
+        with open(results_fname, "a") as f:
             f.write(f"Positive-definition: {pos_def}\n\n")
     pos_val, neg_val = configs["pos_neg_values"][pos_def]
     pos_df = sample_df[sample_df[pos_def] == pos_val]
@@ -291,12 +292,12 @@ for pos_def in pos_definitions:
             if MEASURES == 'stats' or MEASURES == 'all':
                 pos_stats = get_stats(pos_vfo, right_series_i, left_series_i)
                 neg_stats = get_stats(neg_vfo, right_series_i, left_series_i)
-                t_test_outputs(pos_stats, neg_stats, pos_def, series, step_size, sample_size, MEASURES)
+                t_test_outputs(pos_stats, neg_stats, pos_def, series, step_size, sample_size, MEASURES, results_fname)
             
             elif MEASURES == 'info-theory' or MEASURES == 'all': 
                 pos_info_theory_stats = get_info_theory_stats(pos_vfo, right_series_i, left_series_i)
                 neg_info_theory_stats = get_info_theory_stats(neg_vfo, right_series_i, left_series_i)
-                t_test_outputs(pos_info_theory_stats, neg_info_theory_stats, pos_def, series, step_size, sample_size, MEASURES)
+                t_test_outputs(pos_info_theory_stats, neg_info_theory_stats, pos_def, series, step_size, sample_size, MEASURES, results_fname)
             
             else:
                 print('Invalid value for MEASURES')

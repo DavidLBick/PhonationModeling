@@ -1,0 +1,8 @@
+{
+    "data_dir": "", 
+    "label_df_path": "",
+    "measures": "all", 
+    "data_proportion": 1,
+    "pos_definitions": [],
+    "pos_neg_values": {}
+}

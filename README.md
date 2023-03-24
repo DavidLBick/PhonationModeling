@@ -1,15 +1,26 @@
 # Description
 
-This repo contains source codes for phonation modeling and estimating vocal fold and vocal tract models from speech.
+This repo contains source codes for phonation modeling and estimating vocal fold and vocal tract models from speech. It also contains a script to compute features over the outputs of the models, and perform statistical tests between groups such as those with and without vocal fold pathology like COVID-19. 
 
 # Usage
 
-## set up python virtual environment, install dependencies
+## Setup and running the VFO model 
 1. Create conda environment 
 2. `conda install --file /path/to/requirements.txt`
-3. Make sure to `cd` into the same directory as `setup.py`, and then `python setup.py install`
-4. Edit `PhonationModeling/main_scripts/configurations/run_e2e.configure.json` on lines 5, 6, 7, 8, and 25 to put your own values in for `wav_dir`, `list_dir`, `wav_list`, `results_save_dir`, `log_dir`, and `filename`. The meaning for each of these respectively is the location of the audios, the directory of a .txt file that lists the audios that you want to process, the .txt filename that lists the audios, the directory to save your outputs, and the directory to save log files.
-5. Run `python -m PhonationModeling.main_scripts.run_e2e --configure_file /path/to/run_e2e.configure.json`
+3. Make sure to `cd` into the same directory as `setup.py`, and then run `python setup.py install`
+4. Edit `PhonationModeling/main_scripts/configurations/run_e2e.configure.json` on lines 5, 6, 7, 8, and 25 to put your own values in for `wav_dir`, `list_dir`, `wav_list`, `results_save_dir`, `log_dir`, and `filename`. The meaning for each of these respectively is as follows: the path to the directory contained wav files of the audios, the directory of a .txt file that lists the audios that you want to process, the filename of a .txt file that lists all the audios within `wav_dir` that you want to process, the directory to save your outputs, and the directory to save log files.
+5. Run `python -m PhonationModeling.main_scripts.run_e2e --configure_file src/PhonationModeling/main_scripts/configurations/run_e2e.configure.json`
+
+## Running the feature computation and statistical tests
+1. Edit `config_statistics.json` to put in your values for `data_dir`, `label_df_path`, `pos_definitions`, `pos_neg_values`, and `measures`. 
+    * The meaning for these respectively is as follows: the directory of the outputs of the VFO model, the path to the .csv file that contains the labels for each audio, and the list of features that you want to compute
+    * Note that `label_df_path` expects minimally expects the column `path`. `path` should be the path to the audio file _without_ the directory that it is in. This script assumes that all the paths are in `data_dir`. The script supports testing multiple columns as the positive-negative values, which is explained in the next bullet point.
+    * Note that `pos_definitions` is a list of the columns in `label_df_path` that you want to use as labels for the statistical tests. For example, if you want to compare the outputs of the model for audios corresponding to positive and negative COVID-19 test results, as well as symptomatic and asymptomatic COVID-19 patients, then you would include `pos_definitions` as `["label", "symptomatic"]`. This would run the statistical tests for both the positive and negative COVID-19 test results, as well as the symptomatic and asymptomatic COVID-19 patients.
+    * Note that `pos_neg_values` is a dictionary that maps the columns you listed in `pos_definitions` to the values for positive and negative within that column. To continue the example from the previous bullet point, if you want to compare the outputs of the model for audios corresponding to positive and negative COVID-19 test results, as well as symptomatic and asymptomatic COVID-19 patients, then you would include `pos_neg_values` as `{"label": ["positive", "negative"], "symptomatic": ["yes", "no"]}`. This would run the statistical tests for both the positive and negative COVID-19 test results, as well as the symptomatic and asymptomatic COVID-19 patients. It supports using integers such as 1 and 0 for labels as well. 
+    * Note that the currently supported options for `measures` are `stats`, `info-theory`, and `all`. Currently `all` simply means both `stats` and `info-theory`. This allows flexibility for running different tests on different sets of data depending on one's desires.
+2. Run `python statistics.py --configure_file config_statistics.json`
+    * The script will print the progress to stdout, and the outputs of the statistical tests will be saved to "results/results_{sample_size}_{pos_def}_{MEASURES}.txt", where `sample_size` is the number of audios that were processed, `pos_def` is the column name of the positive-negative values, and `MEASURES` is the type of measures that were computed.
+    * The statistical test results are saved with the values for the specific test that was significant, including (1) the step-size used in computing the VFO values, (2) the type of time-series, either displacement (displ) or velocity (vel), (3) the feature computed over the VFO values, and (4) the p-value. Only significant tests are saved.
 
 # Package structure
 ```

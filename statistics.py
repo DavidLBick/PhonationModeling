@@ -292,11 +292,13 @@ for pos_def in pos_definitions:
             if MEASURES == 'stats' or MEASURES == 'all':
                 pos_stats = get_stats(pos_vfo, right_series_i, left_series_i)
                 neg_stats = get_stats(neg_vfo, right_series_i, left_series_i)
+                print("Step size: ", step_size)
                 t_test_outputs(pos_stats, neg_stats, pos_def, series, step_size, sample_size, MEASURES, results_fname)
             
             elif MEASURES == 'info-theory' or MEASURES == 'all': 
                 pos_info_theory_stats = get_info_theory_stats(pos_vfo, right_series_i, left_series_i)
                 neg_info_theory_stats = get_info_theory_stats(neg_vfo, right_series_i, left_series_i)
+                print("Step size: ", step_size)
                 t_test_outputs(pos_info_theory_stats, neg_info_theory_stats, pos_def, series, step_size, sample_size, MEASURES, results_fname)
             
             else:

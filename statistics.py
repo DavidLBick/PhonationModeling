@@ -136,7 +136,6 @@ def bin_data(vfo, step_size_i, tme_srs_r_idx, tme_srs_l_idx):
     concat_y = np.concatenate(all_y)
     # bin the data
     concat_all = np.concatenate((concat_x, concat_y))
-
     binned_all, _, bin_size = utils.bin_series(concat_all, b=num_bins)
     binned_x = binned_all[:len(concat_x)]
     # recreate each waveform by splitting binned_x into the original lengths of each vfo
